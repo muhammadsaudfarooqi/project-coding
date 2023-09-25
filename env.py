@@ -19,7 +19,7 @@ class Environment(tk.Tk, object):
         super(Environment, self).__init__()
         self.action_space = ['up', 'down', 'left', 'right']
         self.n_actions = len(self.action_space)
-        self.title('Robotic Path Tracking by SARSA')
+        self.title('Robotic Path Tracking by Q Learning')
         self.geometry('{0}x{1}'.format(env_height * pixels, env_height * pixels))
         self.build_environment()
 

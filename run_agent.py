@@ -1,8 +1,7 @@
-# Importing classes
 import numpy as np
 
 from env import Environment
-from agent_brain import SarsaTable
+from agent_brain import QLearningTable
 
 def calculate_metrics(steps, costs, total_episodes, exploration_count):
     # Calculate average episode length
@@ -24,74 +23,63 @@ def calculate_metrics(steps, costs, total_episodes, exploration_count):
     print("Exploration Rate (%):", exploration_rate)
     print("Total Episodes:", total_episodes)
 
+def run_episodes():
+    episode_steps = []  # List to store the number of steps for each episode
+    episode_costs = []  # List to store the cost for each episode
 
-def train_agent():
-    # List to store the number of steps per episode
-    steps_per_episode = []
-
-    # List to store the total cost per episode
-    total_costs_per_episode = []
-
-    # Train the agent for a fixed number of episodes
     for episode in range(1000):
-        RL.update_episode_count()  # Increment episode count at the beginning of each episode
-        # Reset the environment to its initial state
+        agent.update_episode_count()  # Increment episode count at the beginning of each episode
+        # Reset the environment to the initial observation
         observation = env.reset()
 
-        # Initialize variables to track the number of steps and the total cost for this episode
-        steps = 0
-        total_cost = 0
-
-        # Choose the first action based on the current observation
-        action = RL.choose_action(str(observation))
+        # Initialize episode-specific variables
+        num_steps = 0
+        episode_cost = 0
 
         while True:
-            # Render the environment to visualize the agent's actions
+            # Render the environment
             env.render()
 
-            # Take the chosen action and observe the next state and reward
-            observation_, reward, done = env.step(action)
+            # Agent chooses an action based on the current observation
+            action = agent.choose_action(str(observation))
 
-            # Choose the next action based on the next observation
-            action_ = RL.choose_action(str(observation_))
+            # Agent takes an action and receives the next observation and reward
+            next_observation, reward, done = env.step(action)
 
-            # Learn from the transition and calculate the cost
-            total_cost += RL.learn(str(observation), action, reward, str(observation_), action_)
+            # Agent learns from this transition and calculates the cost
+            episode_cost += agent.learn(str(observation), action, reward, str(next_observation))
 
-            # Update the current observation and action
-            observation = observation_
-            action = action_
+            # Update the current observation
+            observation = next_observation
 
-            # Increment the step count for this episode
-            steps += 1
-            # Exit the loop when the episode is done (agent reached the goal or an obstacle)
+            # Increment the step count
+            num_steps += 1
+
+            # Break the loop when the episode ends (agent reaches the goal or an obstacle)
             if done:
-                steps_per_episode.append(steps)
-                total_costs_per_episode.append(total_cost)
-                RL.update_episode_count()  # Update the episode count
+                episode_steps.append(num_steps)
+                episode_costs.append(episode_cost)
                 break
+    # Calculate metrics
+    calculate_metrics(episode_steps, episode_costs, agent.total_episodes, agent.exploration_count)
 
     # Show the final route
     env.final()
 
-    # Print the Q-table with values for each action
-    RL.print_q_table()
-    # Calculate and print metrics
-    calculate_metrics(steps_per_episode, total_costs_per_episode,RL.total_episodes, RL.exploration_count)
-    # Plot the results (number of steps and total cost per episode)
-    RL.plot_results(steps_per_episode, total_costs_per_episode)
+    # Show the Q-table with values for each action
+    agent.print_q_table()
 
-# Execute this part only when the script is run directly
+    # Plot the results
+    agent.plot_results(episode_steps, episode_costs)
+
+# Entry point
 if __name__ == "__main__":
-    # Initialize the environment
+    # Create the environment
     env = Environment()
 
-    # Initialize the SARSA agent
-    RL = SarsaTable(actions=list(range(env.n_actions)),
-                    learning_rate=0.1,
-                    reward_decay=0.9,
-                    e_greedy=0.9)
+    # Create the Q-learning agent
+    agent = QLearningTable(actions=list(range(env.n_actions)))
 
-    # Start training the agent by calling the train_agent function
-    env.after(100, train_agent)  # Delayed start or simply call train_agent()
+    # Start running episodes
+    env.after(100, run_episodes)
     env.mainloop()
